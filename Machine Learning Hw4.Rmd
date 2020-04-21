@@ -145,11 +145,62 @@ Use set.seed() for reproducible results.
 
 ```{r}
 data("OJ")
+set.seed(1)
+rowTrain = createDataPartition(y = OJ$Purchase,
+                                p = 0.747,
+                                list = FALSE)
+ctrl <- trainControl(method = "repeatedcv")
 ```
-
 
 (a) Fit a classification tree to the training set, with Purchase as the response and the
 other variables as predictors. Use cross-validation to determine the tree size and
 create a plot of the final tree. Predict the response on the test data. What is the test
 classification error rate?
+
+```{r}
+set.seed(1)
+rpart.class <- train(Purchase ~., OJ, 
+                   subset = rowTrain,
+                   method = "rpart",
+                   tuneGrid = data.frame(cp = exp(seq(-7,-2, len = 50))),
+                   trControl = ctrl,
+                   metric = "Accuracy")
+ggplot(rpart.class, highlight = T)
+rpart.plot(rpart.class$finalModel)
+rpart.class$bestTune
+```
+
+
+```{r}
+rpart.pred <- predict(rpart.class, newdata = OJ[-rowTrain,])
+confusionMatrix(rpart.pred,
+                reference = OJ$Purchase[-rowTrain])
+# Error rate
+error_rate = mean(rpart.pred != OJ$Purchase[-rowTrain]) * 100
+cat(c("The error rate for the classification tree is", error_rate, '%'))
+```
+
+(b) Perform random forests on the training set and report variable importance. What is
+the test error rate?
+
+```{r}
+rf.grid1 = expand.grid(mtry = 1:6, 
+                       splitrule = "gini",
+                       min.node.size = 1:6) 
+set.seed(1)
+rf.fit1 = train(Purchase~., OJ, 
+                method = "ranger",
+                tuneGrid = rf.grid1,
+                trControl = ctrl,
+                importance = 'permutation')
+ggplot(rf.fit1, highlight = TRUE)
+```
+
+
+```{r}
+barplot(sort(ranger::importance(rf.fit1$finalModel), decreasing = FALSE), 
+        las = 2, horiz = TRUE, cex.names = 0.7,
+        col = colorRampPalette(colors = c("darkred","white","darkblue"))(19))
+```
+
 
