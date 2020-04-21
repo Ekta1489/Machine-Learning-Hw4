@@ -1,0 +1,87 @@
+---
+title: "Machine Learning Hw4"
+author: "Ekta Chaudhary"
+date: "20/04/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo = T, message = FALSE, results='hide', warning=FALSE}
+library(ISLR)
+library(caret)
+library(rpart)
+library(rpart.plot)
+library(party)
+library(partykit)
+library(randomForest)
+library(ranger)
+library(gbm)
+library(plotmo)
+library(pdp)
+library(lime)
+library(lasso2)
+```
+(a) Fit a regression tree with lpsa as the response and the other variables as predictors.
+Use cross-validation to determine the optimal tree size. Which tree size corresponds
+to the lowest cross-validation error? Is this the same as the tree size obtained using
+the 1 SE rule?
+
+```{r}
+set.seed(1)
+data("Prostate")
+ctrl<- trainControl(method = "cv")
+```
+
+```{r}
+set.seed(1)
+tree <- rpart(formula = lpsa~., data = Prostate,
+               control = rpart.control(cp = 0.01))
+cpTable <- printcp(tree)
+plotcp(tree)
+```
+```{r}
+minErr <- which.min(cpTable[,4])
+minErr
+```
+The tree size 8 corresponds to the lowest cross-validation error.
+
+```{r}
+cpTable[cpTable[,4]<cpTable[minErr,4]+cpTable[minErr,5],1][1]  
+```
+The tree size obtained using the 1 SE rule is 3.
+
+(b) Create a plot of the final tree you choose. Pick one of the terminal nodes, and
+interpret the information displayed.
+
+```{r}
+tree_a = prune(tree, cp = cpTable[cpTable[,4] < cpTable[minErr,4] + cpTable[minErr,5], 1][1])
+rpart.plot(tree_a)
+```
+
+(c) Perform bagging and report the variable importance
+
+```{r}
+bagging.grid <- expand.grid(mtry = 6,
+                       splitrule = "variance",
+                       min.node.size = 1:15)
+set.seed(1)
+bagging<- train(lpsa~., Prostate, 
+                method = "ranger",
+                tuneGrid = bagging.grid,
+                trControl = ctrl,
+                importance = "permutation")
+
+ggplot(bagging, highlight = TRUE)
+```
+
+```{r}
+barplot(sort(ranger::importance(bagging$finalModel), decreasing = FALSE), 
+        las = 2, horiz = TRUE, cex.names = 0.7,
+        col = colorRampPalette(colors = c("darkred","white","darkblue"))(19))
+```
+The important variables are : lcavol, lweight, svi
+
+```{r}
