@@ -32,7 +32,7 @@ the 1 SE rule?
 ```{r}
 set.seed(1)
 data("Prostate")
-ctrl<- trainControl(method = "cv")
+ctrl <- trainControl(method = "cv")
 ```
 
 ```{r}
@@ -49,7 +49,7 @@ minErr
 The tree size 8 corresponds to the lowest cross-validation error.
 
 ```{r}
-cpTable[cpTable[,4]<cpTable[minErr,4]+cpTable[minErr,5],1][1]  
+cpTable[cpTable[,4] < cpTable[minErr,4] + cpTable[minErr,5],1][1]  
 ```
 The tree size obtained using the 1 SE rule is 3.
 
@@ -64,11 +64,11 @@ rpart.plot(tree_a)
 (c) Perform bagging and report the variable importance
 
 ```{r}
-bagging.grid <- expand.grid(mtry = 6,
+bagging.grid <- expand.grid(mtry = 1:6,
                        splitrule = "variance",
                        min.node.size = 1:15)
 set.seed(1)
-bagging<- train(lpsa~., Prostate, 
+bagging <- train(lpsa~., Prostate, 
                 method = "ranger",
                 tuneGrid = bagging.grid,
                 trControl = ctrl,
@@ -84,4 +84,72 @@ barplot(sort(ranger::importance(bagging$finalModel), decreasing = FALSE),
 ```
 The important variables are : lcavol, lweight, svi
 
+(d) Perform random forests and report the variable importance.
+
 ```{r}
+rf.grid = expand.grid(mtry = 1:6, 
+                       splitrule = "variance",
+                       min.node.size = 1:15) 
+set.seed(1)
+rf.fit = train(lpsa~., Prostate, 
+                method = "ranger",
+                tuneGrid = rf.grid,
+                trControl = ctrl,
+                importance = 'permutation')
+ggplot(rf.fit, highlight = TRUE)
+```
+
+
+```{r}
+barplot(sort(ranger::importance(rf.fit$finalModel), decreasing = FALSE), 
+        las = 2, horiz = TRUE, cex.names = 0.7,
+        col = colorRampPalette(colors = c("darkred","white","darkblue"))(19))
+```
+
+(e) Perform boosting and report the variable importance.
+
+```{r}
+gbm.grid <- expand.grid(n.trees = c(2000,3000),
+                        interaction.depth = 2:10,
+                        shrinkage = c(0.001,0.003,0.005),
+                        n.minobsinnode = 1)
+set.seed(1)
+gbm.fit <- train(lpsa~., Prostate, 
+                 method = "gbm",
+                 tuneGrid = gbm.grid,
+                 trControl = ctrl,
+                 verbose = FALSE)
+
+ggplot(gbm.fit, highlight = TRUE)
+```
+
+Variable importance from boosting can be obtained using the `summary()` function.
+
+```{r}
+summary(gbm.fit$finalModel, las = 2, cBars = 19, cex.names = 0.6)
+```
+
+(f) Which of the above models will you select to predict PSA level? Explain.
+
+```{r}
+resamp <- resamples(list(bagging = bagging, rf = rf.fit, gbm = gbm.fit))
+summary(resamp)
+bwplot(resamp, metric = "RMSE")
+```
+
+2. This problem involves the OJ data in the ISLR package. The data contains 1070 purchases
+where the customers either purchased Citrus Hill or Minute Maid Orange Juice. A number
+of characteristics of customers and products are recorded. Create a training set containing
+a random sample of 800 observations, and a test set containing the remaining observations.
+Use set.seed() for reproducible results.
+
+```{r}
+data("OJ")
+```
+
+
+(a) Fit a classification tree to the training set, with Purchase as the response and the
+other variables as predictors. Use cross-validation to determine the tree size and
+create a plot of the final tree. Predict the response on the test data. What is the test
+classification error rate?
+
