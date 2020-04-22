@@ -24,6 +24,7 @@ library(pdp)
 library(lime)
 library(lasso2)
 ```
+
 (a) Fit a regression tree with lpsa as the response and the other variables as predictors.
 Use cross-validation to determine the optimal tree size. Which tree size corresponds
 to the lowest cross-validation error? Is this the same as the tree size obtained using
@@ -201,6 +202,32 @@ ggplot(rf.fit1, highlight = TRUE)
 barplot(sort(ranger::importance(rf.fit1$finalModel), decreasing = FALSE), 
         las = 2, horiz = TRUE, cex.names = 0.7,
         col = colorRampPalette(colors = c("darkred","white","darkblue"))(19))
+```
+
+(c) Perform boosting on the training set and report variable importance. What is the
+test error rate?
+
+```{r}
+gbm2.grid <- expand.grid(n.trees = c(2000,3000,4000),
+                        interaction.depth = 1:6,
+                        shrinkage = c(0.001,0.003,0.005),
+                        n.minobsinnode = 1)
+set.seed(1)
+gbm2.fit <- train(Purchase ~., OJ, 
+                 subset = rowTrain, 
+                 tuneGrid = gbm2.grid,
+                 trControl = ctrl,
+                 method = "gbm",
+                 distribution = "adaboost",
+                 metric = "Accuracy",
+                 verbose = FALSE)
+ggplot(gbm2.fit, highlight = TRUE)
+```
+
+The selected model had a maximum tree depth of 3 and learning rate of 0.003 with 3000 boosting iterations. 
+
+```{r}
+summary(gbm2.fit$finalModel, las = 2, cBars = 19, cex.names = 0.6)
 ```
 
 
