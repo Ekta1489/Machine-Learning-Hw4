@@ -1,5 +1,5 @@
 ---
-title: "Machine Learning: Hw4"
+title: "Machine Learning Hw4"
 author: "Ekta Chaudhary"
 date: "20/04/2020"
 output: pdf_document
@@ -57,7 +57,7 @@ cpTable[cpTable[,4] < cpTable[minErr,4] + cpTable[minErr,5],1][1]
 tree_a = prune(tree, cp = cpTable[cpTable[,4] < cpTable[minErr,4] + cpTable[minErr,5], 1][1])
 rpart.plot(tree_a)
 ```
-**The mean lpsa for observations with lcavol < 2.5 is 2.1. 78% of the observations have the mean lpsa 2.1.The mean lpsa for observations with lcavol < -0.48 is 0.6. 9% of the observations have the mean lpsa 0.6.**
+**The mean lpsa for observations with lcavol < 2.5 is 2.1. 78% of the observations have the mean lpsa < 2.1.The mean lpsa for observations with lcavol < -0.48 is 0.6. 9% of the observations have the mean lpsa < -0.48.**
 
 **(c) Perform bagging and report the variable importance**
 
